@@ -6,16 +6,10 @@
 	var compiled = {};
 	var views = ["loginView", "evaluationView", "updateSuccessView"];
 	for(var i = 0;i < views.length;i++){
-		if(i==views.length-1){
 			var view_text = document.getElementById(views[i]).text;
 			compiled[views[i]] = doT.template(view_text);
-		}
-		else{
-			var view_text = document.getElementById(views[i]).text;
-			compiled[views[i]] = doT.template(view_text);
-		}
 	}
-	
+
 	//Shared function
 			
 	var handler = {
@@ -40,6 +34,7 @@
 				loginButton.css("display", "block");
 				evaluationButton.css("display", "none");
 				logoutButton.css("display", "none");
+				window.location = "?#login/";
 			});
 		},
 		loginView: function(){
@@ -92,10 +87,11 @@
 					{
 						success: function(user) {
 							handler.navbar();
-							window.location = "#peer-evaluation/";
+							window.location = "?#";
 						}, 
 						error: function(user, error) {
 							alert("Error:" + error.code + " " + error.message);
+							window.location = "?#login/";
 						}
 					}
 				);
@@ -111,10 +107,11 @@
 				user.signUp(null, {
 					success: function(user){
 						handler.navbar();
-						window.location = "#peer-evaluation/";
+						window.location = "?#";
 					},
 					error: function(user, error){
 						alert("Error:" + error.code + " " + error.message);
+						window.location = "?#login/";
 					}
 				});
 			});
@@ -124,27 +121,36 @@
 			var query = new Parse.Query(evaluation);
 			query.first({
 				success: function(data){
-					var members = TAHelp.getMemberList(Parse.User.current().get("username"));
+					var current_user = Parse.User.current();
+					var members = TAHelp.getMemberlistOf(current_user.getUsername());
 					for(var i = 0;i < members.length;i++){
-						if(members[i]["StudentID"]===Parse.User.current().get("username")){
+						if(data === undefined){
+							members[i]["scores"] = ["0", "0", "0", "0"];
+						}
+						else{
+							members[i]["scores"] = data["evaluation"].slice(0);
+						}
+						if(members[i]["StudentId"]===current_user.getUsername()){
 							members.splice(i, 1);
 						}
+						
 					}
-					if(data === undefined){
-						members[i]["score"] = [0, 0, 0, 0];
+					
+					for(var i = 0;i < members.length;i++){
+						for(key in members[i]){
+								console.log(key + " : " + members[i][key]);
+						}
 					}
-					else{
-						members[i]["score"] = data["evaluation"].slice(0);
-					}
-					$("#content").html(compiled["evaluationView"](members));
+					
+					document.getElementById("content").innerHTML = (compiled.evaluationView(members));
 					for(var j = 0;j < 4;j++){
-						$("#stu"+members[i]["StudentID"]+"-q"+j.toString()).val = members[i]["score"][j];
+						$("#stu"+members[i]["StudentId"]+"-q"+j.toString()).val = members[i]["score"][j];
 					}
 					document.getElementById('evaluationForm').addEventListener('submit', function(){
 						for(var i = 0;i < members.length;i++){
 							var total = 0;
 							for(var j = 0;j < 4; j++){
-								var tmp_score = $("#stu"+members[i]["StudentID"]+"-q"+j.toString()).val;
+								var tmp_score = $("#stu"+members[i]["StudentId"]+"-q"+j.toString()).val();
 								members[i]["score"][j] = tmp_score; 
 							}
 						}
