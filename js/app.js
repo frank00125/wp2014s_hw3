@@ -92,7 +92,7 @@
 					{
 						success: function(user) {
 							handler.navbar();
-							window.location = "#peer-evaluation";
+							window.location = "#peer-evaluation/";
 						}, 
 						error: function(user, error) {
 							alert("Error:" + error.code + " " + error.message);
@@ -111,7 +111,7 @@
 				user.signUp(null, {
 					success: function(user){
 						handler.navbar();
-						window.location = "#peer-evaluation";
+						window.location = "#peer-evaluation/";
 					},
 					error: function(user, error){
 						alert("Error:" + error.code + " " + error.message);
@@ -175,11 +175,11 @@
 	
 	var Router = Parse.Router.extend({
 		routes: {
-		"": "index",
+		"": "indexView",
 		"peer-evaluation/": "evaluationView",
 		"login/*redirect": "loginView",
 		},
-		index: handler.loginView,
+		indexView: handler.evaluationView,
 		evaluationView: handler.evaluationView,
 		loginView: handler.loginView,
 	});
