@@ -87,7 +87,7 @@
 					{
 						success: function(user) {
 							handler.navbar();
-							window.location = "?#";
+							window.location = "?#peer-evaluation/";
 						}, 
 						error: function(user, error) {
 							alert("Error:" + error.code + " " + error.message);
@@ -107,7 +107,7 @@
 				user.signUp(null, {
 					success: function(user){
 						handler.navbar();
-						window.location = "?#";
+						window.location = "?#peer-evaluation/";
 					},
 					error: function(user, error){
 						alert("Error:" + error.code + " " + error.message);
@@ -122,36 +122,37 @@
 			query.first({
 				success: function(data){
 					var current_user = Parse.User.current();
-					var members = TAHelp.getMemberlistOf(current_user.getUsername());
-					for(var i = 0;i < members.length;i++){
+					var member = TAHelp.getMemberlistOf(current_user.getUsername());
+						
+					for(var i = 0;i < member.length;i++){
 						if(data === undefined){
-							members[i]["scores"] = ["0", "0", "0", "0"];
+							member[i]["scores"] = new Array("0", "0", "0", "0");
 						}
 						else{
-							members[i]["scores"] = data["evaluation"].slice(0);
+							member[i]["scores"] = data.get("evaluation").slice(0);
 						}
-						if(members[i]["StudentId"]===current_user.getUsername()){
-							members.splice(i, 1);
+						if(member[i]["StudentId"]===current_user.getUsername()){
+							member.splice(i, 1);
 						}
 						
 					}
 					
-					for(var i = 0;i < members.length;i++){
-						for(key in members[i]){
-								console.log(key + " : " + members[i][key]);
+					for(var i = 0;i < member.length;i++){
+						for(key in member[i]){
+								console.log(key + " : " + member[i][key]);
 						}
 					}
 					
-					document.getElementById("content").innerHTML = (compiled.evaluationView(members));
+					document.getElementById("content").innerHTML = (compiled.evaluationView(member));
 					for(var j = 0;j < 4;j++){
-						$("#stu"+members[i]["StudentId"]+"-q"+j.toString()).val = members[i]["score"][j];
+						$("#stu"+members[i]["StudentId"]+"-q"+j.toString()).val = member[i]["scores"][j];
 					}
 					document.getElementById('evaluationForm').addEventListener('submit', function(){
-						for(var i = 0;i < members.length;i++){
+						for(var i = 0;i < member.length;i++){
 							var total = 0;
 							for(var j = 0;j < 4; j++){
-								var tmp_score = $("#stu"+members[i]["StudentId"]+"-q"+j.toString()).val();
-								members[i]["score"][j] = tmp_score; 
+								var tmp_score = $("#stu"+member[i]["StudentId"]+"-q"+j.toString()).val();
+								member[i]["scores"][j] = tmp_score; 
 							}
 						}
 						var changed = new evaluation();
@@ -163,7 +164,7 @@
 								if(data === undefined){
 								}
 								else{
-									changed.set("evaluation", members);
+									changed.set("evaluation", member);
 								}
 							},
 							error: function(changed, error){
@@ -181,7 +182,7 @@
 	
 	var Router = Parse.Router.extend({
 		routes: {
-		"": "indexView",
+		"": "loginView",
 		"peer-evaluation/": "evaluationView",
 		"login/*redirect": "loginView",
 		},
