@@ -129,23 +129,21 @@
 							member[i]["scores"] = new Array("0", "0", "0", "0");
 						}
 						else{
-							member[i]["scores"] = data.get("evaluation").slice(0);
+							member = data.get("evaluation").slice(0);
+							break;
 						}
-						if(member[i]["StudentId"]===current_user.getUsername()){
+						if(member[i].StudentId===current_user.getUsername()){
 							member.splice(i, 1);
+							i--;
 						}
 						
 					}
 					
-					for(var i = 0;i < member.length;i++){
-						for(key in member[i]){
-								console.log(key + " : " + member[i][key]);
-						}
-					}
-					
 					document.getElementById("content").innerHTML = (compiled.evaluationView(member));
-					for(var j = 0;j < 4;j++){
-						$("#stu"+members[i]["StudentId"]+"-q"+j.toString()).val = member[i]["scores"][j];
+					for(var i = 0;i < 4;i++){
+						for(var j = 0;j < 3;j++){
+							$("stu"+member.StudentId+"-q"+j.toString()).val(member[i].scores[j]);
+						}
 					}
 					document.getElementById('evaluationForm').addEventListener('submit', function(){
 						for(var i = 0;i < member.length;i++){
@@ -155,22 +153,33 @@
 								member[i]["scores"][j] = tmp_score; 
 							}
 						}
-						var changed = new evaluation();
-						var originData = data["evaluation"].slice(0)
-						changed.set("user",Parse.User.current());
-						changed.set("evaluation",data["evaluation"]);
-						changed.save(null, {
-							success: function(changed){
-								if(data === undefined){
-								}
-								else{
+						if(data!=undefined){
+							var changed = new evaluation();
+							changed.set("user",Parse.User.current());
+							changed.set("evaluation",data.get("evaluation").slice(0));
+							changed.set("objectId",data.id);
+							changed.save(null, {
+								success: function(changed){
 									changed.set("evaluation", member);
+									changed.save();
+									console.log("Data updated in Parse.");
 								}
-							},
-							error: function(changed, error){
-								alert("Error:" + error.code + " " + error.message);
-							}
-						});
+							});
+						}
+						else{
+							var changed = new evaluation();
+							changed.set("user",Parse.User.current());
+							changed.set("evaluation",member);
+							changed.save(null,{
+								success: function(changed){
+									console.log("New data with id = "+changed.get("objectId")+" created.")
+								},
+								error: function(changed, error){
+									console.log("Failed to create new object, with error code: " + error.description);
+								}
+							});
+						}
+						document.getElementById("content").innerHTML = (compiled.updateSuccessView());
 					});
 				},
 				error: function(data, error){
