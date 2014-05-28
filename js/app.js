@@ -11,7 +11,15 @@
 	}
 
 	//Shared function
-			
+	
+	$("#logoutButton").click(function(){
+		Parse.User.logOut();
+		$("#loginButton").css("display", "block");
+		$("#evaluationButton").css("display", "none");
+		$("#logoutButton").css("display", "none");
+		window.location = "?#login/";
+	});	
+	
 	var handler = {
 		navbar: function(){
 			var users = Parse.User.current();
@@ -28,14 +36,6 @@
 				evaluationButton.css("display", "block");
 				logoutButton.css("display", "block");
 			}
-			
-			logoutButton.click(function(){
-				Parse.User.logOut();
-				loginButton.css("display", "block");
-				evaluationButton.css("display", "none");
-				logoutButton.css("display", "none");
-				window.location = "?#login/";
-			});
 		},
 		loginView: function(){
 			//Show the login content on browser
@@ -87,11 +87,12 @@
 					{
 						success: function(user) {
 							handler.navbar();
-							window.location = "?#peer-evaluation/";
+							window.location.hash = "peer-evaluation/";
 						}, 
 						error: function(user, error) {
+							console.log("Error:" + error.code + " " + error.message);
 							alert("Error:" + error.code + " " + error.message);
-							window.location = "?#login/";
+							window.location.hash = "login/";
 						}
 					}
 				);
@@ -107,11 +108,11 @@
 				user.signUp(null, {
 					success: function(user){
 						handler.navbar();
-						window.location = "?#peer-evaluation/";
+						window.location = "peer-evaluation/";
 					},
 					error: function(user, error){
 						alert("Error:" + error.code + " " + error.message);
-						window.location = "?#login/";
+						window.location = "login/";
 					}
 				});
 			});
@@ -122,23 +123,28 @@
 			query.first({
 				success: function(data){
 					var current_user = Parse.User.current();
-					var member = TAHelp.getMemberlistOf(current_user.getUsername());
+					var username = current_user.getUsername();
+					var member = TAHelp.getMemberlistOf(username);
 						
 					for(var i = 0;i < member.length;i++){
 						if(data === undefined){
+							member[i]["scores"] = new Array("0", "0", "0", "0");
+						}
+						else if(data.get("user")!=current_user){
 							member[i]["scores"] = new Array("0", "0", "0", "0");
 						}
 						else{
 							member = data.get("evaluation").slice(0);
 							break;
 						}
-						if(member[i].StudentId===current_user.getUsername()){
-							member.splice(i, 1);
-							i--;
-						}
-						
 					}
 					
+					for(var i = 0;i < member.length;i++){
+						if(member[i].StudentId === current_user.getUsername()){
+							member.splice(i,1);
+							break;
+						}
+					}
 					document.getElementById("content").innerHTML = (compiled.evaluationView(member));
 					for(var i = 0;i < 4;i++){
 						for(var j = 0;j < 3;j++){
@@ -153,22 +159,10 @@
 								member[i]["scores"][j] = tmp_score; 
 							}
 						}
-						if(data!=undefined){
-							var changed = new evaluation();
-							changed.set("user",Parse.User.current());
-							changed.set("evaluation",data.get("evaluation").slice(0));
-							changed.set("objectId",data.id);
-							changed.save(null, {
-								success: function(changed){
-									changed.set("evaluation", member);
-									changed.save();
-									console.log("Data updated in Parse.");
-								}
-							});
-						}
-						else{
-							var changed = new evaluation();
-							changed.set("user",Parse.User.current());
+						if(data===undefined){
+							var ev = Parse.Object.extend("Evaluation")
+							var changed = new ev();
+							changed.set("user",current_user);
 							changed.set("evaluation",member);
 							changed.save(null,{
 								success: function(changed){
@@ -179,6 +173,35 @@
 								}
 							});
 						}
+						else if(data.get("user")!=current_user){
+							var ev = Parse.Object.extend("Evaluation")
+							var changed = new ev();
+							changed.set("user",current_user);
+							changed.set("evaluation",member);
+							changed.save(null,{
+								success: function(changed){
+									console.log("New data with id = "+changed.get("objectId")+" created.")
+								},
+								error: function(changed, error){
+									console.log("Failed to create new object, with error code: " + error.description);
+								}
+							});
+						}
+						else{
+							var ev = Parse.Object.extend("Evaluation")
+							var changed = new ev();
+							changed.set("user",current_user);
+							changed.set("evaluation",data.get("evaluation").slice(0));
+							changed.set("objectId",data.id);
+							changed.save(null, {
+								success: function(changed){
+									changed.set("evaluation", member);
+									changed.save();
+									console.log("Data updated in Parse.");
+								}
+							});
+						}
+						
 						document.getElementById("content").innerHTML = (compiled.updateSuccessView());
 					});
 				},
@@ -195,7 +218,7 @@
 		"peer-evaluation/": "evaluationView",
 		"login/*redirect": "loginView",
 		},
-		indexView: handler.evaluationView,
+		indexView: handler.loginView,
 		evaluationView: handler.evaluationView,
 		loginView: handler.loginView,
 	});
